@@ -1,13 +1,17 @@
-# Day-ahead Scheduling of microgrid PV, Battery and Electric Boiler
+# H1
+## H2
+### H3
+**bold**
+*italic*
+- Item 1
+- Item 2
 
-*To-do list*
-- [x] Fetch data from EnergyDataService DTU / download files
-    - [x] SYSLAB-PV
-    - [x] SYSLAB-WEATHER
-    - [x] SYSLAB-WIND
-    - [ ] SOLETE-60min
-    - [ ] SOLETE-5min
-
+1. First
+2. Second
+`code`
+```python
+print("Hello")
+```
 ![My Image](.//figures//image.png)
 
 

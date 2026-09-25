@@ -8,7 +8,7 @@ old_case_study.py runs the optimisation for 20 random days over the year for two
 
 Important flags:
 1. under architechture.py > components.State contains the flag sos2 - (False by default) --> Setting it to True add the SOS2 binary constraints, so the model will take 2-3 mins per solve.
-2. components.Sink contains the flag exact - (True by default) --> True means load is constant, False means Load can be controlled.
+2. components.Sink contains the flag exact - (True by default) --> True means load is constant, False means Load can be controlled (shifting and shedding).
 3. components.Source contains the flag exact - (True by default) --> True means No curtailment, False means can be curtailed.
 
 

@@ -31,10 +31,11 @@ pv_day    = pv_15min[date].values
 load_day  = np.full(SPEC.N_T, SPEC.LOAD_MW) 
 idx        = price_15min[date].index
 
-oneday = mod.Scenario(n_t = SPEC.N_T, dt = SPEC.DT, data = {'grid': {'price': price_day},
-                                            'PV'  : {'production': pv_day},
-                                            'bess': {'soc_init': 0.5, 'soc_final': 0.5},
-                                            'load': {'demand': load_day}})
+oneday = mod.Scenario(n_t = SPEC.N_T, dt = SPEC.DT, date = date,
+                      data = {'grid': {'price': price_day},
+                                'PV'  : {'production': pv_day},
+                                'bess': {'soc_init': 0.5, 'soc_final': 0.5, 'deg_cost': 5},
+                                'load': {'demand': load_day, 'shedding_penalty': 1000}})
 
 
 t0 = time.perf_counter()

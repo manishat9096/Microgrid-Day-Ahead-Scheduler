@@ -95,8 +95,7 @@ class Scenario:
     """
     n_t: int = 96
     dt: float = 0.25
-    # ----- new change here
-    date: str = None                 # label only, carried through to the results
+    date: str = None                
     data: dict = field(default_factory=dict)
 
     def need(self, name, key):
@@ -271,7 +270,8 @@ def _build_storage(m, c, ctx):
     if f_final is not None: m.addConstr(soc[n_t] == f_final * c.capacity, name=f'soc_terminal_{c.name}')
 
     ctx['inject'][c.bus].append(lambda t: dis.tail(t) - ch.head(t))
-    # ctx['obj'].append(gp.quicksum(5 * (P_ch[t] + P_dis[t]) * dt for t in T))    
+    degradation_cost = ctx['sc'].opt(c.name, 'deg_cost')
+    if degradation_cost is not None: ctx['obj'].append(gp.quicksum(degradation_cost * (P_ch[t] + P_dis[t]) * dt for t in T))    
 
 
     def extract():
@@ -294,8 +294,7 @@ def _build_sink(m, c, ctx):
         np.asarray(ctx['sc'].need(c.name, 'demand'), dtype=float), (len(T),)))
 
     if c.exact:
-        # Uncontrollable: the load draws demand[t] whatever the price, so its power
-        # is known before the solve and nothing here enters the LP.
+        # Uncontrollable: the load draws demand[t] whatever the price, so its power is known before the solve and nothing here enters the LP.
         if demand.max() > c.power + 1e-9:
             raise ValueError(
                 f'{c.name}: peak demand {demand.max():.4f} MW exceeds its connection '
@@ -314,8 +313,7 @@ def _build_sink(m, c, ctx):
                     'demand': demand.copy(), 'losses': per_stage, 'eta': demand / P_bus}
         return extract
 
-    # Controllable: the LP picks the profile. Energy over the horizon is preserved,
-    # so the load shifts in time instead of vanishing.
+    # Controllable: the LP picks the profile. Energy over the horizon is preserved, so the load shifts in time instead of vanishing.
     chain = _Chain(m, T, reversed(c.stages), c.name)        # bus -> terminal
     ub = min(c.power, chain.max_deliverable())
     need_MWh = float(demand.sum()) * dt
@@ -325,9 +323,13 @@ def _build_sink(m, c, ctx):
             f'{ub:.4f} MW over {len(T)} steps.')
 
     P = m.addVars(T, lb=0.0, ub=ub, name=f'P_{c.name}')
+    P_shed = m.addVars(T, lb = 0.0, ub = ub, name=f'P_{c.name}_shedding')
     m.addConstrs((chain.tail(t) == P[t] for t in T), name=f'serve_{c.name}')
-    m.addConstr(gp.quicksum(P[t] for t in T) * dt == need_MWh, name=f'energy_{c.name}')
+    m.addConstr(gp.quicksum((P[t] + P_shed[t]) for t in T) * dt == need_MWh, name=f'energy_{c.name}')
     ctx['inject'][c.bus].append(lambda t: -chain.head(t))
+    
+    shedding_penalty = ctx['sc'].opt(c.name, 'shedding_penalty')
+    if shedding_penalty is not None: ctx['obj'].append(gp.quicksum(shedding_penalty * P_shed[t] * dt for t in T))    
 
     def extract():
         served = np.array([P[t].X for t in T])
